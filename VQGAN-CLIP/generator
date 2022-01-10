@@ -1,0 +1,39 @@
+export PYTHONPATH=/home/kinjo/work/CLIP:${PYTHONPATH}
+export PYTHONPATH=/home/kinjo/work/taming-transformers:${PYTHONPATH}
+export PYTHONPATH=/home/kinjo/work/pytorch-optimizer:${PYTHONPATH}
+export PYTHONPATH=/home/kinjo/work/Real-ESRGAN:${PYTHONPATH}
+image=creatures_crying_in_the_earth_facing_food_crisis,_climate_change_and_energy_crisis-atom,_molecule-abstract-artstation-symmetry_vqgan_imagenet_f16_16384.png
+#model=vqgan_imagenet_f16_16384
+model=wikiart_f16_16384_8145600
+#model=vqgan_gumbel_f8_8192
+texts=${1}  # prompts
+# images=${2} # image_prompts
+# device=${3}
+iter=5000
+weight=1e-1
+lr=1e-3
+python generate.py \
+--vqgan_config ./checkpoints/${model}.yaml \
+--vqgan_checkpoint ./checkpoints/${model}.ckpt \
+--prompts "${1}" \
+--init_weight ${weight} \
+--iterations ${iter} \
+--save_every 10 \
+--init_noise pixels \
+--optimiser RAdam \
+--learning_rate 1e-1 \
+--cuda_device "cuda:${3}" \
+--change_prompt_every 10 \
+--output ./results/example.png
+python inference_realesrgan.py \
+--model_path pretrained/RealESRGAN_x4plus.pth \
+--input ./results/example.png \
+--outscale 5 \
+--suffix scaled \
+--output ./results
+prompts=`echo ${texts// /_}`
+prompts=`echo ${prompts//|/-}`
+mv ./results/example.png ./results/${prompts}_${model}_${iter}_${weight}_${lr}.png
+mv ./results/example_scaled.png ./results/${prompts}_${model}_${iter}_${weight}_${lr}_scaled.png
+rclone sync results gdrive:temp/vqgan_clip
+# --image_prompts ${2}
